@@ -1,0 +1,51 @@
+{
+  "system": {
+    "hostname": "server01",
+    "schedule": "06:30 täglich",
+    "log_retention_days": 30
+  },
+  "thresholds": {
+    "disk_warn_percent": 85,
+    "disk_crit_percent": 95,
+    "inode_warn_percent": 85,
+    "inode_crit_percent": 95,
+    "docker_build_cache_warn_gb": 40,
+    "memory_warn_percent": 90,
+    "swap_warn_percent": 80,
+    "load_warn_per_core": 2.5,
+    "ssh_failed_warn": 100,
+    "sudo_failed_warn": 5,
+    "journal_errors_warn": 100
+  },
+  "critical_services": [
+    "ssh",
+    "docker",
+    "fail2ban",
+    "openmediavault-engined",
+    "postfix",
+    "cron"
+  ],
+  "checks": {
+    "system_health": true,
+    "os_updates": true,
+    "unattended_upgrades": true,
+    "reboot_required": true,
+    "critical_services": true,
+    "failed_services": true,
+    "docker_status": true,
+    "docker_image_updates": true,
+    "docker_storage": true,
+    "filesystem": true,
+    "firewall": true,
+    "listening_ports": true,
+    "security_incidents": true,
+    "ssh_logins": true,
+    "fail2ban": true,
+    "root_users": true,
+    "system_errors": true
+  },
+  "paths": {
+    "log_dir": "logs",
+    "latest_report": "latest_report.md"
+  }
+}

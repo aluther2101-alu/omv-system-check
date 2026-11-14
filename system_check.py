@@ -22,6 +22,7 @@ import datetime
 import pathlib
 import shutil
 import subprocess
+import hashlib
 from collections import Counter
 
 BASE_DIR = pathlib.Path(__file__).resolve().parent
@@ -459,52 +460,57 @@ def check_docker_image_updates(containers: list[dict]) -> list[dict]:
             except Exception:
                 pass
 
-        code, m_out, m_err = run_cmd(["docker", "manifest", "inspect", "-v", image], timeout=12)
-        if code != 0:
-            err_msg = m_err.strip()
-            if "manifest unknown" in err_msg or "not found" in err_msg:
-                status_desc = "LOCAL_ONLY"
-                details = "Nicht auf Remote-Registry gefunden"
-            elif "timed out" in err_msg:
-                status_desc = "TIMEOUT"
-                details = "Registry-Timeout bei der Prüfung"
-            else:
-                status_desc = "SKIPPED"
-                details = f"Prüfung übersprungen ({err_msg[:60]})"
-            results.append({
-                "image": image,
-                "status": status_desc,
-                "details": details,
-            })
-            continue
+        matched = False
 
-        has_update = False
-        try:
-            m_json = json.loads(m_out)
-            manifest_items = m_json if isinstance(m_json, list) else [m_json]
-            remote_amd64_digest = None
-            for item in manifest_items:
-                desc = item.get("Descriptor", {})
-                plat = desc.get("platform", {})
-                if plat.get("architecture") == "amd64" and plat.get("os") == "linux":
-                    remote_amd64_digest = desc.get("digest")
-                    break
-
-            matched = False
+        # 1. Methode: buildx imagetools inspect --raw liefert den exakten Manifest-Index Hash
+        # welcher von Docker in RepoDigests für Multi-Arch Images gespeichert wird
+        code_raw, raw_out, err_raw = run_cmd(["docker", "buildx", "imagetools", "inspect", "--raw", image], timeout=12)
+        if code_raw == 0 and raw_out:
+            raw_hash = f"sha256:{hashlib.sha256(raw_out.encode('utf-8')).hexdigest()}"
             for ld in local_digests:
-                if remote_amd64_digest and remote_amd64_digest in ld:
+                if raw_hash in ld:
                     matched = True
                     break
 
-            if remote_amd64_digest and not matched:
-                has_update = True
-        except Exception:
-            pass
+        # 2. Methode: Fallback auf docker manifest inspect für Single-Arch oder Child-Manifests
+        if not matched:
+            code_m, m_out, m_err = run_cmd(["docker", "manifest", "inspect", "-v", image], timeout=12)
+            if code_m == 0 and m_out:
+                try:
+                    m_json = json.loads(m_out)
+                    manifest_items = m_json if isinstance(m_json, list) else [m_json]
+                    for item in manifest_items:
+                        desc_digest = item.get("Descriptor", {}).get("digest")
+                        for ld in local_digests:
+                            if desc_digest and desc_digest in ld:
+                                matched = True
+                                break
+                        if matched:
+                            break
+                except Exception:
+                    pass
+            elif code_raw != 0:
+                err_msg = (err_raw or m_err).strip()
+                if "manifest unknown" in err_msg or "not found" in err_msg:
+                    status_desc = "LOCAL_ONLY"
+                    details = "Nicht auf Remote-Registry gefunden"
+                elif "timed out" in err_msg:
+                    status_desc = "TIMEOUT"
+                    details = "Registry-Timeout bei der Prüfung"
+                else:
+                    status_desc = "SKIPPED"
+                    details = f"Prüfung übersprungen ({err_msg[:60]})"
+                results.append({
+                    "image": image,
+                    "status": status_desc,
+                    "details": details,
+                })
+                continue
 
         results.append({
             "image": image,
-            "status": "UPDATE_AVAILABLE" if has_update else "UP_TO_DATE",
-            "details": "Neueres Image in Registry verfügbar" if has_update else "Aktuell",
+            "status": "UP_TO_DATE" if matched else "UPDATE_AVAILABLE",
+            "details": "Aktuell" if matched else "Neueres Image in Registry verfügbar",
         })
 
     return results

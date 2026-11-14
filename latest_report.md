@@ -1,21 +1,19 @@
 # 🛡️ Täglicher System- & Sicherheitsbericht: server01
-**Prüfzeitpunkt:** `2026-11-13 19:10:43` | **Auslöser:** Täglicher Cronjob (06:30 Uhr)
+**Prüfzeitpunkt:** `2026-11-14 11:28:06` | **Auslöser:** Täglicher Cronjob (06:30 Uhr)
 
 ### 🟡 **STATUS: WARNUNG** - Aufmerksamkeit oder Wartung empfohlen
 
 #### 📌 Wichtigste Feststellungen:
-- 5 Docker-Image-Update(s) in Registry verfügbar
-- 3725 fehlgeschlagene SSH-Logins in 24h
-- Erhöhte Fehleranzahl im Systemd-Journal: 1793 Fehlermeldungen (Priorität 0-3) in 24h
-- Kernel I/O-Wartezeit-Meldungen (hung_task/io_wait) in 24h (31 Meldung(en))
+- 434 fehlgeschlagene SSH-Logins in 24h
+- Kernel I/O-Wartezeit-Meldungen (hung_task/io_wait) in 24h (7 Meldung(en))
 
 ---
 
 ## 🩺 1. Systemgesundheit & Performance
-- **System-Uptime:** `19h 58m`
-- **CPU-Auslastung:** `Load 1m: 0.15` | `5m: 0.3` | `15m: 0.25` (12 CPU-Kerne, `0.01` pro Kern)
-- **Arbeitsspeicher (RAM):** `8022.0 MB` von `23997.0 MB` genutzt (**33.4%**)
-- **Swap-Speicher:** *Kein Swap konfiguriert*
+- **System-Uptime:** `1d 12h 15m`
+- **CPU-Auslastung:** `Load 1m: 0.81` | `5m: 0.52` | `15m: 0.36` (12 CPU-Kerne, `0.07` pro Kern)
+- **Arbeitsspeicher (RAM):** `8054.0 MB` von `23997.0 MB` genutzt (**33.6%**)
+- **Swap-Speicher:** `0.0 MB` von `4096.0 MB` genutzt (**0.0%**)
 - **Kernel OOM-Killer:** 🟢 Keine OOM-Ereignisse festgestellt.
 
 ---
@@ -24,7 +22,7 @@
 - **Ausstehende Updates gesamt:** `0`
 - **Debian Sicherheitsupdates:** `0`
 - **System-Neustart erforderlich:** 🟢 Nein
-- **Letzter Unattended-Upgrades Lauf:** `2026-11-13 06:08:58` (keine neuen Pakete)
+- **Letzter Unattended-Upgrades Lauf:** `2026-11-14 06:07:21` (keine neuen Pakete)
 
 *Alle Betriebssystempakete sind aktuell.*
 
@@ -51,42 +49,42 @@
 
 | Container | Status | Health | Image |
 |---|---|---|---|
-| `ollama` | Up 19 hours | 🟡 none | `ollama/ollama:latest` |
-| `open-webui` | Up 19 hours (healthy) | 🟢 healthy | `ghcr.io/open-webui/open-webui:latest` |
-| `acd-voice-assistant-web` | Up 20 hours (healthy) | 🟢 healthy | `acd-voice-assistant-web:1.0.0` |
-| `acd-voice-assistant-gov` | Up 20 hours (healthy) | 🟢 healthy | `acd-voice-assistant-gov:1.0.0` |
-| `acd-voice-assistant-stt` | Up 20 hours (healthy) | 🟢 healthy | `acd-voice-assistant-stt:1.0.0` |
-| `openvpn-as` | Up 19 hours | 🟡 none | `openvpn/openvpn-as` |
-| `tika` | Up 19 hours | 🟡 none | `apache/tika:latest` |
-| `crafty_container` | Up 19 hours | 🟡 none | `registry.gitlab.com/crafty-controller/crafty-4:latest` |
-| `stunnel-proxy` | Up 19 hours | 🟡 none | `stunnel-terminator` |
-| `acd-voice-assistant-db` | Up 20 hours (healthy) | 🟢 healthy | `acd-voice-assistant-db:1.0.0` |
+| `ollama` | Up 11 hours | 🟡 none | `ollama/ollama:latest` |
+| `open-webui` | Up 11 hours (healthy) | 🟢 healthy | `ghcr.io/open-webui/open-webui:latest` |
+| `acd-voice-assistant-web` | Up 36 hours (healthy) | 🟢 healthy | `acd-voice-assistant-web:1.0.0` |
+| `acd-voice-assistant-gov` | Up 36 hours (healthy) | 🟢 healthy | `acd-voice-assistant-gov:1.0.0` |
+| `acd-voice-assistant-stt` | Up 36 hours (healthy) | 🟢 healthy | `acd-voice-assistant-stt:1.0.0` |
+| `openvpn-as` | Up 11 hours | 🟡 none | `openvpn/openvpn-as` |
+| `tika` | Up 11 hours | 🟡 none | `apache/tika:latest` |
+| `crafty_container` | Up 11 hours | 🟡 none | `registry.gitlab.com/crafty-controller/crafty-4:latest` |
+| `stunnel-proxy` | Up 11 hours | 🟡 none | `stunnel-terminator` |
+| `acd-voice-assistant-db` | Up 36 hours (healthy) | 🟢 healthy | `acd-voice-assistant-db:1.0.0` |
 
 **Registry-Aktualitätsprüfung der Images:**
 | Image | Registry Status | Details |
 |---|---|---|
-| `ollama/ollama:latest` | 🟡 Update verfügbar | Neueres Image in Registry verfügbar |
-| `ghcr.io/open-webui/open-webui:latest` | 🟡 Update verfügbar | Neueres Image in Registry verfügbar |
+| `ollama/ollama:latest` | 🟢 Aktuell | Aktuell |
+| `ghcr.io/open-webui/open-webui:latest` | 🟢 Aktuell | Aktuell |
 | `acd-voice-assistant-web:1.0.0` | ⚪ LOCAL_BUILD | Projektinternes/lokales Image |
 | `acd-voice-assistant-gov:1.0.0` | ⚪ LOCAL_BUILD | Projektinternes/lokales Image |
 | `acd-voice-assistant-stt:1.0.0` | ⚪ LOCAL_BUILD | Projektinternes/lokales Image |
-| `openvpn/openvpn-as` | 🟡 Update verfügbar | Neueres Image in Registry verfügbar |
-| `apache/tika:latest` | 🟡 Update verfügbar | Neueres Image in Registry verfügbar |
-| `registry.gitlab.com/crafty-controller/crafty-4:latest` | 🟡 Update verfügbar | Neueres Image in Registry verfügbar |
+| `openvpn/openvpn-as` | 🟢 Aktuell | Aktuell |
+| `apache/tika:latest` | 🟢 Aktuell | Aktuell |
+| `registry.gitlab.com/crafty-controller/crafty-4:latest` | 🟢 Aktuell | Aktuell |
 | `stunnel-terminator` | ⚪ LOCAL_ONLY | Lokales Image oder keine Remote-Registry |
 | `acd-voice-assistant-db:1.0.0` | ⚪ LOCAL_BUILD | Projektinternes/lokales Image |
 
 **Docker Storage Aufteilung:**
 - **Build-Cache:** `1.96GB`
-- **Images:** `16.27GB`
-- **Volumes:** `4.696GB`
+- **Images:** `16.73GB`
+- **Volumes:** `4.593GB`
 
 ---
 
 ## 💾 5. Dateisystem & Speicher-Integrität
-- **Festplatte `/`:** `171.4 GB` von `708.5 GB` belegt (**24.2%**)
-- **Freier Speicherplatz:** `508.2 GB`
-- **Inode-Belegung (`/`):** `702253` von `47177728` (**2.0%**)
+- **Festplatte `/`:** `175.9 GB` von `708.5 GB` belegt (**24.8%**)
+- **Freier Speicherplatz:** `503.8 GB`
+- **Inode-Belegung (`/`):** `716856` von `47177728` (**2.0%**)
 - **Mount-Modus:** 🟢 Read-Write (Normal)
 - **Verzeichnis-Integrität:** 🟢 Keine unberechtigten oder verdächtigen Ordner auf `/`.
 
@@ -94,7 +92,7 @@
 
 ## 🧱 6. Firewall & Netzwerksicherheit
 - **Dienststatus:** `nftables`: ⚪ Inaktiv | `ufw`: ⚪ Inaktiv
-- **Öffentlich lauschende Ports (`0.0.0.0` / `::`):** `31` TCP, `194` UDP
+- **Öffentlich lauschende Ports (`0.0.0.0` / `::`):** `31` TCP, `156` UDP
 - **Nur lokal gebundene Ports (`127.0.0.1`):** `4` TCP
 
 **Gefundene sensitive / öffentlich exponierte Ports:**
@@ -110,56 +108,55 @@
 
 ## 🛡️ 7. Sicherheitsvorfälle & Authentifizierung
 ### SSH-Aktivität (letzte 24 Stunden)
-- **Fehlgeschlagene Logins:** `3725`
-- **Erfolgreiche Logins:** `13`
+- **Fehlgeschlagene Logins:** `434`
+- **Erfolgreiche Logins:** `2`
 
 **Top Angreifer-IPs:**
 | IP-Adresse | Fehlversuche |
 |---|---|
-| `77.239.124.71` | 500 |
-| `77.239.124.63` | 500 |
-| `77.239.124.156` | 237 |
-| `92.118.39.77` | 50 |
-| `2.57.122.209` | 38 |
+| `117.247.23.131` | 8 |
+| `1.234.80.94` | 6 |
+| `213.209.159.228` | 4 |
+| `104.244.79.113` | 4 |
+| `156.232.13.246` | 3 |
 
 ### Fail2Ban & Abwehr
 - **Dienststatus:** 🟢 Aktiv
-- **Gesperrte IPs (Bans im Log):** `8`
-  - Kürzlich gebannte IPs: `1.234.80.94, 117.247.23.131, 104.244.79.113, 192.169.232.223`
+- **Gesperrte IPs (Bans im Log):** `24`
+  - Kürzlich gebannte IPs: `193.24.211.206, 92.118.39.71, 194.163.152.211, 186.96.158.180, 71.6.245.76`
 
 ### Sitzungen & Berechtigungen
-- **Aktive interaktive Benutzersitzungen (2):**
-  - Benutzer `andreas` an `pts/0` von `192.168.2.41` (seit 2026-11-13 15:43)
-  - Benutzer `andreas` an `pts/3` von `192.168.2.23` (seit 2026-11-13 00:28)
-- **Sudo-Fehlversuche (24h):** `1`
+- **Aktive interaktive Benutzersitzungen (1):**
+  - Benutzer `andreas` an `pts/0` von `192.168.2.93` (seit 2026-11-14 11:15)
+- **Sudo-Fehlversuche (24h):** `0`
 - **Root-Konten (UID 0):** `root`
 - **Sudo-Berechtigte Benutzer:** `andreas`
 
 ---
 
 ## ⚠️ 8. Fehlermeldungen & Systemprotokolle
-- **Systemd-Journal Fehler (Priorität 0-3, letzte 24h):** `1793` Ereignisse
+- **Systemd-Journal Fehler (Priorität 0-3, letzte 24h):** `34` Ereignisse
 
 **Häufigste Fehlermuster im Journal:**
 | Häufigkeit | Dienst / Fehlermeldung |
 |---|---|
-| `286x` | `monit: Alert handler failed, retry scheduled for next cycle` |
-| `187x` | `monit: Cannot connect to [127.0.0.1]:25 -- Connection timed out` |
-| `187x` | `monit: Cannot open a connection to the mailserver 127.0.0.1:25 -- Operation now in` |
-| `187x` | `monit: Mail: Delivery failed -- no mail server is available` |
-| `107x` | `postfix/smtpd: fatal: connect #11 to subsystem private/proxymap: Connection refused` |
-| `101x` | `monit: Mail: Error receiving data from the mailserver -- Resource temporarily unav` |
-| `37x` | `omv-engined: ----------` |
-| `29x` | `omv-engined: ` |
+| `7x` | `kernel: audit: backlog limit exceeded` |
+| `6x` | `sshd-session: error: kex_exchange_identification: read: Connection reset by peer [preauth` |
+| `3x` | `openmediavault-webgui: Authorized login from 192.168.2.41 (username=admin, user-agent=Mozilla/5.0 ` |
+| `2x` | `sshd-session: error: Protocol major versions differ: 2 vs. 1 [preauth]` |
+| `2x` | `monit: 'server01' loadavg (5min) of 13.8 matches resource limit [loadavg (5min) > ` |
+| `2x` | `postfix/sendmail: fatal: root(0): message file too big` |
+| `1x` | `openmediavault-webgui: Authorized login from 192.168.2.23 (username=admin, user-agent=Mozilla/5.0 ` |
+| `1x` | `openmediavault-webgui: Authorized login from 192.168.2.41 (username=andreas, user-agent=Mozilla/5.` |
 
-🔴 **Kernel-Hardware- / Treiberfehler (letzte 24h):**
-- `Nov 13 00:30:45 server01 kernel: INFO: task kworker/u513:6:95 blocked in I/O wait for more than 120 seconds.`
-- `Nov 13 00:30:45 server01 kernel:       Tainted: G               X    7.2.12+deb13-amd64 #1 Debian 7.2.12-1~bpo13+1`
-- `Nov 13 00:30:45 server01 kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.`
+⚠️ **Kernel I/O-Wartezeiten / Hung-Tasks (letzte 24h):**
+- `Nov 13 18:58:01 server01 kernel: audit: backlog limit exceeded`
+- `Nov 13 19:11:34 server01 kernel: audit: backlog limit exceeded`
+- `Nov 13 19:11:39 server01 kernel: audit: backlog limit exceeded`
 
 ---
 
 ## 💡 Empfohlene Maßnahmen
-1. Docker Images aktualisieren: z.B. `docker pull <image>` oder `docker-compose pull && docker-compose up -d`
+1. Keine Maßnahmen erforderlich. Das System, alle Dateisysteme, Daemons und Container sind stabil.
 
 *Automatischer Prüfbericht generiert durch `system_check.py`.*

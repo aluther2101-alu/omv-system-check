@@ -1157,6 +1157,7 @@ def check_system_errors(thresholds: dict) -> dict:
         r"filebrowser-proxy.*shutdown complete",
         r"filebrowser-proxy.*byeee",
         r"filebrowser-proxy.*shutting down apps",
+        r"openmediavault-webgui.*Authorized login",
     ]
 
     code, stdout, _ = run_cmd(["journalctl", "-p", "0..3", "--since", "24 hours ago", "--no-pager"], timeout=15)

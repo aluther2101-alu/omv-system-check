@@ -660,7 +660,8 @@ def check_filesystem(thresholds: dict) -> dict:
     std_dirs = {
         "bin", "boot", "dev", "etc", "home", "lib", "lib32", "lib64", "libx32",
         "lost+found", "media", "mnt", "opt", "proc", "root", "run", "sbin",
-        "srv", "sys", "tmp", "usr", "var", "sftp", "export"
+        "srv", "sys", "tmp", "usr", "var", "sftp", "export",
+        "Scripte", "scripte", "scripts", "Scripts"
     }
     try:
         for entry in os.listdir("/"):
@@ -751,39 +752,118 @@ def check_listening_ports() -> dict:
 
 def check_firewall(ports: dict) -> dict:
     result = {
+        "omv_firewall_active": False,
         "nftables_active": False,
         "ufw_active": False,
-        "iptables_status": "unbekannt",
-        "default_input_policy": "unbekannt",
+        "active_firewall": "Keine",
+        "iptables_readable": False,
+        "ipv4_default_policy": "unbekannt",
+        "ipv4_rules_count": 0,
+        "ipv4_has_catchall_drop": False,
+        "ipv6_default_policy": "unbekannt",
+        "ipv6_rules_count": 0,
+        "ipv6_has_catchall_drop": False,
+        "port_rules": {},
         "sensitive_exposed_ports": [],
         "warnings": [],
         "status": "OK",
     }
 
-    # 1. Daemon-Status
-    code, stdout, _ = run_cmd(["systemctl", "is-active", "nftables"], timeout=5)
-    result["nftables_active"] = (stdout.strip() == "active")
+    # 1. Daemon-Status prüfen
+    code_omv, out_omv, _ = run_cmd(["systemctl", "is-active", "openmediavault-firewall"], timeout=5)
+    result["omv_firewall_active"] = (out_omv.strip() == "active")
 
-    code, stdout, _ = run_cmd(["systemctl", "is-active", "ufw"], timeout=5)
-    result["ufw_active"] = (stdout.strip() == "active")
+    code_nft, out_nft, _ = run_cmd(["systemctl", "is-active", "nftables"], timeout=5)
+    result["nftables_active"] = (out_nft.strip() == "active")
 
-    # 2. IPTables / NFTables Regeln prüfen
-    code, stdout, stderr = run_cmd(["iptables", "-S", "INPUT"], timeout=5)
-    if code == 0 and stdout:
-        result["iptables_status"] = "aktiv"
-        for line in stdout.splitlines():
+    code_ufw, out_ufw, _ = run_cmd(["systemctl", "is-active", "ufw"], timeout=5)
+    result["ufw_active"] = (out_ufw.strip() == "active")
+
+    active_daemons = []
+    if result["omv_firewall_active"]:
+        active_daemons.append("iptables (OMV-Firewall)")
+    if result["nftables_active"]:
+        active_daemons.append("nftables")
+    if result["ufw_active"]:
+        active_daemons.append("ufw")
+
+    result["active_firewall"] = ", ".join(active_daemons) if active_daemons else "Keine"
+
+    # 2. IPTables IPv4 Regeln prüfen (direkt oder via sudo -n)
+    code_v4, stdout_v4, _ = run_cmd(["iptables", "-S"], timeout=5)
+    if code_v4 != 0:
+        code_v4, stdout_v4, _ = run_cmd(["sudo", "-n", "iptables", "-S"], timeout=5)
+
+    if code_v4 == 0 and stdout_v4:
+        result["iptables_readable"] = True
+        for line in stdout_v4.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+
             if line.startswith("-P INPUT"):
-                policy = line.split()[-1]
-                result["default_input_policy"] = policy
-                break
-    else:
-        # Falls ohne root nicht lesbar, prüfe Konfigurationsdateien
-        nft_conf = pathlib.Path("/etc/nftables.conf")
-        if nft_conf.is_file():
-            result["iptables_status"] = "Konfiguration vorhanden (/etc/nftables.conf)"
+                result["ipv4_default_policy"] = line.split()[-1]
+            elif line.startswith("-A INPUT"):
+                result["ipv4_rules_count"] += 1
 
-    # 3. Sensitive lauschende Ports analysieren (0.0.0.0 / ::)
-    # Bekannte heikle Dienste
+                # Catch-All DROP / REJECT prüfen
+                if line in ["-A INPUT -j DROP", "-A INPUT -j REJECT"]:
+                    result["ipv4_has_catchall_drop"] = True
+
+                # Ports extrahieren (--dport oder multiport)
+                dports = []
+                m_single = re.search(r"--dport\s+(\d+)", line)
+                if m_single:
+                    dports.append(int(m_single.group(1)))
+                m_multi = re.search(r"--dports\s+([0-9,]+)", line)
+                if m_multi:
+                    for p in m_multi.group(1).split(","):
+                        if p.isdigit():
+                            dports.append(int(p))
+
+                # Quelle extrahieren
+                src = "alle (0.0.0.0/0)"
+                m_src = re.search(r"-s\s+(\S+)", line)
+                if m_src:
+                    src = m_src.group(1)
+                elif "--src-range" in line:
+                    m_range = re.search(r"--src-range\s+(\S+)", line)
+                    if m_range:
+                        src = m_range.group(1)
+
+                m_iface = re.search(r"-i\s+(\S+)", line)
+                if m_iface:
+                    src += f" auf {m_iface.group(1)}"
+
+                action = "ACCEPT" if "-j ACCEPT" in line else ("DROP" if "-j DROP" in line else ("REJECT" if "-j REJECT" in line else "OTHER"))
+
+                for dp in dports:
+                    if dp not in result["port_rules"]:
+                        result["port_rules"][dp] = []
+                    result["port_rules"][dp].append({
+                        "action": action,
+                        "source": src,
+                        "raw": line
+                    })
+
+    # 3. IP6Tables IPv6 Regeln prüfen
+    code_v6, stdout_v6, _ = run_cmd(["ip6tables", "-S"], timeout=5)
+    if code_v6 != 0:
+        code_v6, stdout_v6, _ = run_cmd(["sudo", "-n", "ip6tables", "-S"], timeout=5)
+
+    if code_v6 == 0 and stdout_v6:
+        for line in stdout_v6.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith("-P INPUT"):
+                result["ipv6_default_policy"] = line.split()[-1]
+            elif line.startswith("-A INPUT"):
+                result["ipv6_rules_count"] += 1
+                if line in ["-A INPUT -j DROP", "-A INPUT -j REJECT"]:
+                    result["ipv6_has_catchall_drop"] = True
+
+    # 4. Sensitive Ports analysieren (0.0.0.0 / ::)
     sensitive_map = {
         22: ("SSH", "Brute-Force Angriffsziel (Empfehlung: Fail2Ban oder Portwechsel)"),
         139: ("Samba (NetBIOS)", "Unsicher im Internet! Dringend schließen."),
@@ -799,18 +879,54 @@ def check_firewall(ports: dict) -> dict:
     public_tcp_ports = set(p["port"] for p in ports.get("public_tcp", []))
     for p, (srv, note) in sensitive_map.items():
         if p in public_tcp_ports:
+            fw_protection = "Ungeprüft (erfordert root für Detail-Regeln)"
+            is_protected = False
+
+            if result["iptables_readable"]:
+                rules_for_p = result["port_rules"].get(p, [])
+                if rules_for_p:
+                    allow_rules = [r for r in rules_for_p if r["action"] == "ACCEPT"]
+                    drop_rules = [r for r in rules_for_p if r["action"] in ["DROP", "REJECT"]]
+                    if drop_rules and not allow_rules:
+                        fw_protection = "🟢 Blockiert durch IPTables"
+                        is_protected = True
+                    elif allow_rules:
+                        sources = [r["source"] for r in allow_rules]
+                        is_restricted = any(s != "alle (0.0.0.0/0)" for s in sources)
+                        if is_restricted:
+                            fw_protection = f"🟢 Geschützt (nur von {', '.join(sources)})"
+                            is_protected = True
+                        else:
+                            fw_protection = "🟡 Erlaubt von überall (0.0.0.0/0)"
+                elif result["ipv4_has_catchall_drop"] or result["ipv4_default_policy"] in ["DROP", "REJECT"]:
+                    fw_protection = "🟢 Blockiert durch Default/Catchall DROP"
+                    is_protected = True
+                else:
+                    fw_protection = "⚠️ Ungeschützt (keine Regel, Default ACCEPT)"
+            elif result["omv_firewall_active"]:
+                fw_protection = "🟢 IPTables OMV-Firewall aktiv"
+                is_protected = True
+
             result["sensitive_exposed_ports"].append({
                 "port": p,
                 "service": srv,
+                "protection": fw_protection,
                 "note": note,
+                "is_protected": is_protected,
             })
-            if p in [139, 445, 5432, 3306]:
-                result["warnings"].append(f"Kritischer Port öffentlich geöffnet: {p} ({srv})")
-                result["status"] = "CRITICAL"
 
-    if result["default_input_policy"] == "ACCEPT" and not result["nftables_active"] and not result["ufw_active"]:
+            # Nur alarmieren, wenn tatsächlich ungeschützt
+            if not is_protected and not result["omv_firewall_active"]:
+                if p in [139, 445, 5432, 3306]:
+                    result["warnings"].append(f"Kritischer Port ungeschützt öffentlich geöffnet: {p} ({srv})")
+                    result["status"] = "CRITICAL"
+                elif p in [11434, 8080, 8081]:
+                    if result["status"] == "OK":
+                        result["status"] = "WARNING"
+
+    if not result["omv_firewall_active"] and not result["nftables_active"] and not result["ufw_active"]:
         if result["sensitive_exposed_ports"]:
-            result["warnings"].append(f"Keine strikte Firewall aktiv (Default: ACCEPT) mit {len(result['sensitive_exposed_ports'])} sensitiven Diensten.")
+            result["warnings"].append(f"Keine Firewall aktiv mit {len(result['sensitive_exposed_ports'])} sensitiven Diensten.")
             if result["status"] == "OK":
                 result["status"] = "WARNING"
 
@@ -1353,28 +1469,35 @@ def generate_markdown_report(data: dict, overall_status: str, reasons: list[str]
     fw = data.get("firewall", {})
     ports = data.get("ports", {})
 
+    ipt_str = "🟢 Aktiv (openmediavault-firewall)" if fw.get("omv_firewall_active") else "⚪ Inaktiv"
     nft_str = "🟢 Aktiv" if fw.get("nftables_active") else "⚪ Inaktiv"
     ufw_str = "🟢 Aktiv" if fw.get("ufw_active") else "⚪ Inaktiv"
-    md.append(f"- **Dienststatus:** `nftables`: {nft_str} | `ufw`: {ufw_str}")
-    if fw.get("default_input_policy") != "unbekannt":
-        md.append(f"- **Default INPUT-Policy:** `{fw.get('default_input_policy')}`")
+    md.append(f"- **Dienststatus:** `iptables`: {ipt_str} | `nftables`: {nft_str} | `ufw`: {ufw_str}")
+
+    if fw.get("iptables_readable"):
+        v4_drop = " (mit Catch-All DROP)" if fw.get("ipv4_has_catchall_drop") else ""
+        md.append(f"- **IPv4 Regelwerk:** `{fw.get('ipv4_rules_count', 0)} Regeln aktiv` | Default-Policy: `{fw.get('ipv4_default_policy', 'unbekannt')}`{v4_drop}")
+        v6_drop = " (mit Catch-All DROP)" if fw.get("ipv6_has_catchall_drop") else ""
+        md.append(f"- **IPv6 Regelwerk:** `{fw.get('ipv6_rules_count', 0)} Regeln aktiv` | Default-Policy: `{fw.get('ipv6_default_policy', 'unbekannt')}`{v6_drop}")
+    elif fw.get("omv_firewall_active"):
+        md.append("- **Regelwerk:** 🟢 OpenMediaVault IPTables-Regelsatz aktiv geladen.")
 
     unique_pub_tcp = sorted(list(set(p["port"] for p in ports.get("public_tcp", []))))
     unique_pub_udp = sorted(list(set(p["port"] for p in ports.get("public_udp", []))))
     unique_loc_tcp = sorted(list(set(p["port"] for p in ports.get("localhost_tcp", []))))
     unique_vpn_tcp = sorted(list(set(p["port"] for p in ports.get("vpn_tcp", []))))
 
-    md.append(f"- **Öffentlich lauschende Ports (`0.0.0.0` / `::`):** `{len(unique_pub_tcp)}` TCP, `{len(unique_pub_udp)}` UDP")
+    md.append(f"- **Lauschende Ports auf Host (`0.0.0.0` / `::`):** `{len(unique_pub_tcp)}` TCP, `{len(unique_pub_udp)}` UDP")
     md.append(f"- **Nur lokal gebundene Ports (`127.0.0.1`):** `{len(unique_loc_tcp)}` TCP")
     if unique_vpn_tcp:
         md.append(f"- **Nur an VPN/LAN gebundene Ports:** `{len(unique_vpn_tcp)}` TCP (`{', '.join(str(p) for p in unique_vpn_tcp)}`)")
 
     if fw.get("sensitive_exposed_ports"):
-        md.append("\n**Gefundene sensitive / öffentlich exponierte Ports:**")
-        md.append("| Port | Dienst | Bewertung / Empfehlung |")
-        md.append("|---|---|---|")
+        md.append("\n**Gefundene sensitive Ports & Firewall-Filterstatus:**")
+        md.append("| Port | Dienst | Socket-Bindung | IPTables Schutzstatus | Bewertung / Empfehlung |")
+        md.append("|---|---|---|---|---|")
         for sep in fw["sensitive_exposed_ports"]:
-            md.append(f"| `{sep['port']}` | `{sep['service']}` | {sep['note']} |")
+            md.append(f"| `{sep['port']}` | `{sep['service']}` | `0.0.0.0:{sep['port']}` | {sep.get('protection', 'Unbekannt')} | {sep['note']} |")
 
     md.append("\n---\n")
 
